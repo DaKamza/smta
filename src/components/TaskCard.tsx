@@ -5,7 +5,7 @@ import { formatDateTime, getDaysRemaining, getTaskStatus, getStatusText } from '
 import StatusBadge from './StatusBadge';
 import { CheckCircle, Clock, Edit, Trash, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { toast } from '@/components/ui/sonner';
+import { toast } from 'sonner';
 
 interface TaskCardProps {
   task: Task;

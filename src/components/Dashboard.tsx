@@ -4,7 +4,7 @@ import { Task, TaskFormData } from '@/types/task';
 import TaskCard from './TaskCard';
 import TaskForm from './TaskForm';
 import { Button } from '@/components/ui/button';
-import { Plus, Calendar, Grid3X3, Filter } from 'lucide-react';
+import { Plus, Calendar, Grid3X3, Filter, CheckCircle, CheckCircle2, Edit, Trash } from 'lucide-react';
 import { 
   Select,
   SelectContent,

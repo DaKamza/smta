@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Task, TaskFormData } from '../types/task';
 import { stringToDate } from '../utils/dateUtils';
-import { toast } from '@/components/ui/sonner';
+import { toast } from 'sonner';
 
 // In a real application, this would be connected to a backend API
 // For now, we'll use localStorage for persistence
