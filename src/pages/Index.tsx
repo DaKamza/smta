@@ -1,13 +1,29 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import Layout from '@/components/Layout';
+import Dashboard from '@/components/Dashboard';
+import { useTasks } from '@/hooks/useTasks';
 
 const Index = () => {
+  const { 
+    tasks, 
+    isLoading, 
+    addTask, 
+    updateTask, 
+    toggleTaskCompletion, 
+    deleteTask 
+  } = useTasks();
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
-      </div>
-    </div>
+    <Layout>
+      <Dashboard
+        tasks={tasks}
+        isLoading={isLoading}
+        onAddTask={addTask}
+        onUpdateTask={updateTask}
+        onDeleteTask={deleteTask}
+        onToggleTaskCompletion={toggleTaskCompletion}
+      />
+    </Layout>
   );
 };
 
