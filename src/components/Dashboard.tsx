@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Task, TaskFormData } from '@/types/task';
 import TaskCard from './TaskCard';
@@ -57,13 +56,13 @@ const Dashboard = ({
     setEditingTask(undefined);
   };
 
-  const handleSubmitTask = (data: TaskFormData) => {
-    let success;
+  const handleSubmitTask = async (data: TaskFormData) => {
+    let success: boolean;
     
     if (editingTask) {
-      success = onUpdateTask(editingTask.id, data);
+      success = await onUpdateTask(editingTask.id, data);
     } else {
-      success = onAddTask(data);
+      success = await onAddTask(data);
     }
     
     if (success) {

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Task, TaskFormData } from '../types/task';
 import { stringToDate } from '../utils/dateUtils';
@@ -11,7 +10,6 @@ export const useTasks = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
   
-  // Load tasks from Supabase on initial render or when user changes
   useEffect(() => {
     const loadTasks = async () => {
       if (!user) {
@@ -33,7 +31,6 @@ export const useTasks = () => {
           toast.error('Failed to load your tasks');
           setTasks([]);
         } else {
-          // Transform Supabase data to match our Task type
           const formattedTasks: Task[] = data.map((task: any) => ({
             id: task.id,
             courseName: task.title.split(' - ')[0] || '',
@@ -57,19 +54,16 @@ export const useTasks = () => {
       }
     };
 
-    // Load tasks when component mounts or user changes
     loadTasks();
   }, [user?.id]);
 
-  // Add a new task
-  const addTask = async (formData: TaskFormData) => {
+  const addTask = async (formData: TaskFormData): Promise<boolean> => {
     if (!user) {
       toast.error('You must be logged in to add tasks');
       return false;
     }
     
     try {
-      // Format task for Supabase
       const dueDate = stringToDate(formData.dueDate, formData.dueTime);
       
       const taskData = {
@@ -94,7 +88,6 @@ export const useTasks = () => {
         return false;
       }
       
-      // Add the new task to the local state
       const newTask: Task = {
         id: data.id,
         courseName: formData.courseName,
@@ -117,15 +110,13 @@ export const useTasks = () => {
     }
   };
 
-  // Update an existing task
-  const updateTask = async (id: string, formData: TaskFormData) => {
+  const updateTask = async (id: string, formData: TaskFormData): Promise<boolean> => {
     if (!user) {
       toast.error('You must be logged in to update tasks');
       return false;
     }
     
     try {
-      // Format task for Supabase
       const dueDate = stringToDate(formData.dueDate, formData.dueTime);
       
       const taskData = {
@@ -147,7 +138,6 @@ export const useTasks = () => {
         return false;
       }
       
-      // Update the task in the local state
       setTasks(prevTasks => 
         prevTasks.map(task => 
           task.id === id 
@@ -169,7 +159,6 @@ export const useTasks = () => {
     }
   };
 
-  // Toggle task completion status
   const toggleTaskCompletion = async (id: string) => {
     if (!user) {
       toast.error('You must be logged in to update tasks');
@@ -177,11 +166,9 @@ export const useTasks = () => {
     }
     
     try {
-      // Find the current task
       const task = tasks.find(t => t.id === id);
       if (!task) return;
       
-      // Update in Supabase
       const { error } = await supabase
         .from('tasks')
         .update({ completed: !task.completed })
@@ -193,7 +180,6 @@ export const useTasks = () => {
         return;
       }
       
-      // Update in local state
       setTasks(prevTasks => 
         prevTasks.map(task => 
           task.id === id 
@@ -209,7 +195,6 @@ export const useTasks = () => {
     }
   };
 
-  // Delete a task
   const deleteTask = async (id: string) => {
     if (!user) {
       toast.error('You must be logged in to delete tasks');
