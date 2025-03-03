@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Task, TaskFormData } from '@/types/task';
 import TaskCard from './TaskCard';
@@ -17,8 +18,8 @@ import { cn } from '@/lib/utils';
 interface DashboardProps {
   tasks: Task[];
   isLoading: boolean;
-  onAddTask: (data: TaskFormData) => boolean;
-  onUpdateTask: (id: string, data: TaskFormData) => boolean;
+  onAddTask: (data: TaskFormData) => Promise<boolean> | boolean;
+  onUpdateTask: (id: string, data: TaskFormData) => Promise<boolean> | boolean;
   onDeleteTask: (id: string) => void;
   onToggleTaskCompletion: (id: string) => void;
 }
