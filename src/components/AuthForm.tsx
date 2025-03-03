@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 type AuthMode = 'login' | 'register';
 
@@ -16,6 +17,7 @@ const AuthForm = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showConfirmEmailMessage, setShowConfirmEmailMessage] = useState(false);
   
   const { login, register } = useAuth();
   const navigate = useNavigate();
@@ -49,14 +51,27 @@ const AuthForm = () => {
     if (!validate()) return;
     
     setIsLoading(true);
+    setShowConfirmEmailMessage(false);
     
     try {
       let success = false;
       
       if (mode === 'login') {
         success = await login(email, password);
+        if (!success) {
+          // Check if the error is due to unconfirmed email
+          const error = localStorage.getItem('auth_error');
+          if (error && error.includes('email_not_confirmed')) {
+            setShowConfirmEmailMessage(true);
+          }
+        }
       } else {
         success = await register(email, password, name);
+        if (success) {
+          // Show email confirmation message after successful registration
+          setShowConfirmEmailMessage(true);
+          toast.info('Please check your email to confirm your account before logging in.');
+        }
       }
       
       if (success) {
@@ -65,12 +80,14 @@ const AuthForm = () => {
       }
     } finally {
       setIsLoading(false);
+      localStorage.removeItem('auth_error');
     }
   };
 
   const toggleMode = () => {
     setMode(prevMode => prevMode === 'login' ? 'register' : 'login');
     setErrors({});
+    setShowConfirmEmailMessage(false);
   };
 
   return (
@@ -85,6 +102,16 @@ const AuthForm = () => {
             : 'Register to start managing your tasks'}
         </p>
       </div>
+      
+      {showConfirmEmailMessage && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-md mb-4 flex items-start">
+          <AlertCircle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="font-medium">Email confirmation required</p>
+            <p className="text-sm">Please check your inbox and confirm your email address before logging in.</p>
+          </div>
+        </div>
+      )}
       
       <form onSubmit={handleSubmit} className="space-y-4">
         {mode === 'register' && (

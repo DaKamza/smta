@@ -1,10 +1,8 @@
-
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 
-// Define types
 interface UserProfile {
   id: string;
   email: string;
@@ -19,21 +17,18 @@ interface AuthContextType {
   logout: () => Promise<void>;
 }
 
-// Create context
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Set up auth state listener on mount
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         setIsLoading(true);
         
         if (session && session.user) {
-          // Fetch user profile data from profiles table
           const { data, error } = await supabase
             .from('profiles')
             .select('*')
@@ -58,12 +53,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    // Check for initial session
     const initializeAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session && session.user) {
-        // Fetch user profile data from profiles table
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
@@ -92,7 +85,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  // Register new user
   const register = async (email: string, password: string, name: string): Promise<boolean> => {
     try {
       const { data, error } = await supabase.auth.signUp({
@@ -125,7 +117,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Login existing user
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -135,6 +126,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) {
         console.error('Login error:', error);
+        
+        if (error.code) {
+          localStorage.setItem('auth_error', error.code);
+        }
+        
         toast.error(error.message);
         return false;
       }
@@ -153,7 +149,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Logout user
   const logout = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -177,7 +172,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-// Custom hook to use auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
