@@ -1,8 +1,17 @@
 
 import Layout from '@/components/Layout';
 import AuthForm from '@/components/AuthForm';
+import { useAuth } from '@/hooks/useAuth';
+import { Navigate } from 'react-router-dom';
 
 const Auth = () => {
+  const { user, isLoading } = useAuth();
+
+  // If user is already authenticated, redirect to dashboard
+  if (!isLoading && user) {
+    return <Navigate to="/" replace />;
+  }
+
   return (
     <Layout>
       <div className="max-w-md mx-auto pt-10">

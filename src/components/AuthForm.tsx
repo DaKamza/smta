@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 type AuthMode = 'login' | 'register';
 
@@ -17,6 +18,7 @@ const AuthForm = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   
   const { login, register } = useAuth();
+  const navigate = useNavigate();
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -49,10 +51,17 @@ const AuthForm = () => {
     setIsLoading(true);
     
     try {
+      let success = false;
+      
       if (mode === 'login') {
-        await login(email, password);
+        success = await login(email, password);
       } else {
-        await register(email, password, name);
+        success = await register(email, password, name);
+      }
+      
+      if (success) {
+        // Navigate to the dashboard after successful authentication
+        navigate('/');
       }
     } finally {
       setIsLoading(false);
