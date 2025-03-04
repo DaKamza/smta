@@ -1,15 +1,9 @@
-
 import { useState, useEffect } from 'react';
 import { Task, TaskFormData } from '../types/task';
+import { stringToDate } from '../utils/dateUtils';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
-import { 
-  fetchTasks, 
-  createTask, 
-  updateTaskById, 
-  toggleTaskCompletionById, 
-  deleteTaskById 
-} from '../services/taskService';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useTasks = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -26,8 +20,35 @@ export const useTasks = () => {
       
       try {
         setIsLoading(true);
-        const fetchedTasks = await fetchTasks();
-        setTasks(fetchedTasks);
+        
+        const { data, error } = await supabase
+          .from('tasks')
+          .select('*')
+          .order('due_date', { ascending: true });
+        
+        if (error) {
+          console.error('Error loading tasks:', error);
+          toast.error('Failed to load your tasks');
+          setTasks([]);
+        } else {
+          const formattedTasks: Task[] = data.map((task: any) => ({
+            id: task.id,
+            courseName: task.title.split(' - ')[0] || '',
+            moduleName: task.title.split(' - ')[1] || '',
+            moduleCode: task.description.split(' - ')[0] || '',
+            taskType: task.priority as any || 'Assignment',
+            taskTopic: task.description.split(' - ')[1] || task.description || '',
+            dueDate: new Date(task.due_date),
+            completed: task.completed,
+            createdAt: new Date(task.created_at)
+          }));
+          
+          setTasks(formattedTasks);
+        }
+      } catch (error) {
+        console.error('Error loading tasks:', error);
+        toast.error('Failed to load your tasks');
+        setTasks([]);
       } finally {
         setIsLoading(false);
       }
@@ -42,13 +63,51 @@ export const useTasks = () => {
       return false;
     }
     
-    const newTask = await createTask(formData, user.id);
-    if (newTask) {
+    try {
+      const dueDate = stringToDate(formData.dueDate, formData.dueTime);
+      
+      const taskData = {
+        user_id: user.id,
+        title: `${formData.courseName} - ${formData.moduleName}`,
+        description: `${formData.moduleCode} - ${formData.taskTopic}`,
+        due_date: dueDate.toISOString(),
+        due_time: formData.dueTime,
+        priority: formData.taskType,
+        completed: false
+      };
+      
+      const { data, error } = await supabase
+        .from('tasks')
+        .insert(taskData)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error adding task:', error);
+        toast.error('Failed to create task');
+        return false;
+      }
+      
+      const newTask: Task = {
+        id: data.id,
+        courseName: formData.courseName,
+        moduleName: formData.moduleName,
+        moduleCode: formData.moduleCode,
+        taskType: formData.taskType,
+        taskTopic: formData.taskTopic,
+        dueDate,
+        completed: false,
+        createdAt: new Date(data.created_at)
+      };
+      
       setTasks(prevTasks => [...prevTasks, newTask]);
+      toast.success('Task created successfully');
       return true;
+    } catch (error) {
+      console.error('Error adding task:', error);
+      toast.error('Failed to create task');
+      return false;
     }
-    
-    return false;
   };
 
   const updateTask = async (id: string, formData: TaskFormData): Promise<boolean> => {
@@ -57,8 +116,28 @@ export const useTasks = () => {
       return false;
     }
     
-    const success = await updateTaskById(id, formData);
-    if (success) {
+    try {
+      const dueDate = stringToDate(formData.dueDate, formData.dueTime);
+      
+      const taskData = {
+        title: `${formData.courseName} - ${formData.moduleName}`,
+        description: `${formData.moduleCode} - ${formData.taskTopic}`,
+        due_date: dueDate.toISOString(),
+        due_time: formData.dueTime,
+        priority: formData.taskType
+      };
+      
+      const { error } = await supabase
+        .from('tasks')
+        .update(taskData)
+        .eq('id', id);
+      
+      if (error) {
+        console.error('Error updating task:', error);
+        toast.error('Failed to update task');
+        return false;
+      }
+      
       setTasks(prevTasks => 
         prevTasks.map(task => 
           task.id === id 
@@ -70,10 +149,14 @@ export const useTasks = () => {
             : task
         )
       );
+      
+      toast.success('Task updated successfully');
       return true;
+    } catch (error) {
+      console.error('Error updating task:', error);
+      toast.error('Failed to update task');
+      return false;
     }
-    
-    return false;
   };
 
   const toggleTaskCompletion = async (id: string) => {
@@ -82,11 +165,21 @@ export const useTasks = () => {
       return;
     }
     
-    const task = tasks.find(t => t.id === id);
-    if (!task) return;
-    
-    const success = await toggleTaskCompletionById(id, task.completed);
-    if (success) {
+    try {
+      const task = tasks.find(t => t.id === id);
+      if (!task) return;
+      
+      const { error } = await supabase
+        .from('tasks')
+        .update({ completed: !task.completed })
+        .eq('id', id);
+      
+      if (error) {
+        console.error('Error toggling task completion:', error);
+        toast.error('Failed to update task');
+        return;
+      }
+      
       setTasks(prevTasks => 
         prevTasks.map(task => 
           task.id === id 
@@ -94,6 +187,11 @@ export const useTasks = () => {
             : task
         )
       );
+      
+      toast.success(task.completed ? 'Task marked as incomplete' : 'Task marked as complete');
+    } catch (error) {
+      console.error('Error toggling task completion:', error);
+      toast.error('Failed to update task');
     }
   };
 
@@ -103,9 +201,23 @@ export const useTasks = () => {
       return;
     }
     
-    const success = await deleteTaskById(id);
-    if (success) {
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('id', id);
+      
+      if (error) {
+        console.error('Error deleting task:', error);
+        toast.error('Failed to delete task');
+        return;
+      }
+      
       setTasks(prevTasks => prevTasks.filter(task => task.id !== id));
+      toast.success('Task deleted successfully');
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      toast.error('Failed to delete task');
     }
   };
 
@@ -118,6 +230,3 @@ export const useTasks = () => {
     deleteTask
   };
 };
-
-// Import stringToDate for local date transformation in updateTask
-import { stringToDate } from '../utils/dateUtils';

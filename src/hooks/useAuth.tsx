@@ -1,4 +1,3 @@
-
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
@@ -25,15 +24,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    console.log("AuthProvider initializing");
-    
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log("Auth state changed", { event, session: !!session });
         setIsLoading(true);
         
         if (session && session.user) {
-          console.log("Session exists, fetching profile");
           const { data, error } = await supabase
             .from('profiles')
             .select('*')
@@ -44,7 +39,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             console.error('Error fetching user profile:', error);
             setUser(null);
           } else if (data) {
-            console.log("Profile found", data);
             setUser({
               id: data.id,
               email: data.email,
@@ -52,7 +46,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             });
           }
         } else {
-          console.log("No session found");
           setUser(null);
         }
         
@@ -61,50 +54,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     );
 
     const initializeAuth = async () => {
-      try {
-        console.log("Fetching initial session");
-        const { data: { session }, error } = await supabase.auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session && session.user) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
         
         if (error) {
-          console.error("Error getting session:", error);
-          setIsLoading(false);
-          return;
-        }
-        
-        if (session && session.user) {
-          console.log("Initial session exists, fetching profile for user", session.user.id);
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (error) {
-            console.error('Error fetching user profile:', error);
-            setUser(null);
-          } else if (data) {
-            console.log("Initial profile found", data);
-            setUser({
-              id: data.id,
-              email: data.email,
-              name: data.name
-            });
-          }
-        } else {
-          console.log("No initial session found");
+          console.error('Error fetching user profile:', error);
           setUser(null);
+        } else if (data) {
+          setUser({
+            id: data.id,
+            email: data.email,
+            name: data.name
+          });
         }
-      } catch (err) {
-        console.error("Unexpected error during auth initialization:", err);
-      } finally {
-        setIsLoading(false);
       }
+      
+      setIsLoading(false);
     };
 
     initializeAuth();
 
     return () => {
-      console.log("Auth subscription cleaning up");
       subscription.unsubscribe();
     };
   }, []);
