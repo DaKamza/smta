@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -54,40 +53,24 @@ const AuthForm = () => {
     setShowConfirmEmailMessage(false);
     
     try {
-      let success = false;
-      
       if (mode === 'login') {
-        success = await login(email, password);
-        if (!success) {
-          // Check if the error is due to unconfirmed email
-          const error = localStorage.getItem('auth_error');
-          if (error && error.includes('email_not_confirmed')) {
-            setShowConfirmEmailMessage(true);
-          }
+        const success = await login(email, password);
+        if (success) {
+          navigate('/');
         }
       } else {
-        success = await register(email, password, name);
-        if (success) {
-          // Show email confirmation message after successful registration
+        const result = await register(email, password, name);
+        
+        if (result.success) {
           setShowConfirmEmailMessage(true);
           toast.info('Please check your email to confirm your account before logging in.');
-        } else {
-          // Check if error is due to user already existing
-          const error = localStorage.getItem('auth_error');
-          if (error && error.includes('user_already_registered')) {
-            toast.info('This email is already registered. Please sign in instead.');
-            setMode('login');
-          }
+        } else if (result.error === 'already_registered') {
+          toast.info('This email is already registered. Please sign in instead.');
+          setMode('login');
         }
-      }
-      
-      if (success) {
-        // Navigate to the dashboard after successful authentication
-        navigate('/');
       }
     } finally {
       setIsLoading(false);
-      localStorage.removeItem('auth_error');
     }
   };
 

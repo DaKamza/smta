@@ -1,4 +1,3 @@
-
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -12,7 +11,7 @@ interface UserProfile {
 interface AuthContextType {
   user: UserProfile | null;
   isLoading: boolean;
-  register: (email: string, password: string, name: string) => Promise<boolean>;
+  register: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
 }
@@ -85,7 +84,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  const register = async (email: string, password: string, name: string): Promise<boolean> => {
+  const register = async (email: string, password: string, name: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -100,26 +99,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) {
         console.error('Error during registration:', error);
         
-        // Store error code in localStorage for UI handling
         if (error.message.includes('already registered')) {
-          localStorage.setItem('auth_error', 'user_already_registered');
+          return { 
+            success: false, 
+            error: 'already_registered'
+          };
         }
         
         toast.error(error.message);
-        return false;
+        return { success: false, error: error.message };
       }
 
       if (data.user) {
         toast.success('Registration successful! Please check your email to verify your account.');
-        return true;
+        return { success: true };
       } else {
         toast.error('Something went wrong during registration');
-        return false;
+        return { success: false, error: 'unknown_error' };
       }
     } catch (error) {
       console.error('Registration error:', error);
       toast.error('Registration failed');
-      return false;
+      return { success: false, error: 'unknown_error' };
     }
   };
 
@@ -132,11 +133,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) {
         console.error('Login error:', error);
-        
-        if (error.code) {
-          localStorage.setItem('auth_error', error.code);
-        }
-        
         toast.error(error.message);
         return false;
       }
