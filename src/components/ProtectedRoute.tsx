@@ -10,6 +10,8 @@ interface ProtectedRouteProps {
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, isLoading } = useAuth();
 
+  console.log('ProtectedRoute state:', { isAuthenticated: !!user, isLoading });
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex justify-center items-center">
@@ -19,9 +21,11 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   }
 
   if (!user) {
+    console.log('No user found, redirecting to auth page');
     return <Navigate to="/auth" replace />;
   }
 
+  console.log('User authenticated, rendering protected content');
   return <>{children}</>;
 };
 
