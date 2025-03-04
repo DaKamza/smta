@@ -2,6 +2,7 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
+import { useEffect } from 'react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -10,12 +11,22 @@ interface ProtectedRouteProps {
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, isLoading } = useAuth();
 
-  console.log('ProtectedRoute state:', { isAuthenticated: !!user, isLoading });
+  useEffect(() => {
+    console.log('ProtectedRoute mounted, auth state:', { 
+      isAuthenticated: !!user, 
+      isLoading,
+      user: user ? `User ID: ${user.id.substring(0, 8)}...` : 'No user'
+    });
+  }, [user, isLoading]);
+
+  console.log('ProtectedRoute render state:', { isAuthenticated: !!user, isLoading });
 
   if (isLoading) {
+    console.log('Auth is still loading, showing loading spinner');
     return (
       <div className="min-h-screen flex justify-center items-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">Loading authentication...</span>
       </div>
     );
   }
