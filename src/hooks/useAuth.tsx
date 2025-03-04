@@ -1,6 +1,6 @@
+
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Session, User } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 
 interface UserProfile {
@@ -99,6 +99,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) {
         console.error('Error during registration:', error);
+        
+        // Store error code in localStorage for UI handling
+        if (error.message.includes('already registered')) {
+          localStorage.setItem('auth_error', 'user_already_registered');
+        }
+        
         toast.error(error.message);
         return false;
       }

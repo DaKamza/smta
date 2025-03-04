@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -71,6 +71,13 @@ const AuthForm = () => {
           // Show email confirmation message after successful registration
           setShowConfirmEmailMessage(true);
           toast.info('Please check your email to confirm your account before logging in.');
+        } else {
+          // Check if error is due to user already existing
+          const error = localStorage.getItem('auth_error');
+          if (error && error.includes('user_already_registered')) {
+            toast.info('This email is already registered. Please sign in instead.');
+            setMode('login');
+          }
         }
       }
       
