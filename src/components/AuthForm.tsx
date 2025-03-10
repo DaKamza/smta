@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +8,7 @@ import { Loader2, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
-type AuthMode = 'login' | 'register';
+type AuthMode = 'login' | 'register' | 'forgotPassword';
 
 const AuthForm = () => {
   const [mode, setMode] = useState<AuthMode>('login');
@@ -18,7 +19,7 @@ const AuthForm = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showConfirmEmailMessage, setShowConfirmEmailMessage] = useState(false);
   
-  const { login, register } = useAuth();
+  const { login, register, resetPassword } = useAuth();
   const navigate = useNavigate();
 
   const validate = () => {
@@ -58,7 +59,7 @@ const AuthForm = () => {
         if (success) {
           navigate('/');
         }
-      } else {
+      } else if (mode === 'register') {
         const result = await register(email, password, name);
         
         if (result.success) {
@@ -80,28 +81,43 @@ const AuthForm = () => {
             }
           }, 100);
         }
+      } else if (mode === 'forgotPassword') {
+        const success = await resetPassword(email);
+        if (success) {
+          toast.success('Password reset email sent. Please check your inbox.');
+          setMode('login');
+        }
       }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const toggleMode = () => {
-    setMode(prevMode => prevMode === 'login' ? 'register' : 'login');
+  const toggleMode = (newMode: AuthMode) => {
+    setMode(newMode);
     setErrors({});
     setShowConfirmEmailMessage(false);
+    if (newMode === 'forgotPassword') {
+      setPassword('');
+    }
   };
 
   return (
     <div className="mx-auto max-w-md w-full p-6 bg-white dark:bg-black border rounded-xl shadow-sm">
       <div className="text-center mb-6">
         <h2 className="text-2xl font-bold">
-          {mode === 'login' ? 'Sign In' : 'Create an Account'}
+          {mode === 'login' 
+            ? 'Sign In' 
+            : mode === 'register'
+            ? 'Create an Account'
+            : 'Reset Password'}
         </h2>
         <p className="text-muted-foreground mt-1">
           {mode === 'login' 
             ? 'Sign in to access your tasks' 
-            : 'Register to start managing your tasks'}
+            : mode === 'register'
+            ? 'Register to start managing your tasks'
+            : 'Enter your email to reset your password'}
         </p>
       </div>
       
@@ -150,21 +166,23 @@ const AuthForm = () => {
           )}
         </div>
         
-        <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-            disabled={isLoading}
-            className={errors.password ? 'border-destructive' : ''}
-          />
-          {errors.password && (
-            <p className="text-destructive text-xs">{errors.password}</p>
-          )}
-        </div>
+        {mode !== 'forgotPassword' && (
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              disabled={isLoading}
+              className={errors.password ? 'border-destructive' : ''}
+            />
+            {errors.password && (
+              <p className="text-destructive text-xs">{errors.password}</p>
+            )}
+          </div>
+        )}
         
         <Button 
           type="submit" 
@@ -172,23 +190,68 @@ const AuthForm = () => {
           disabled={isLoading}
         >
           {isLoading && <Loader2 size={16} className="mr-2 animate-spin" />}
-          {mode === 'login' ? 'Sign In' : 'Create Account'}
+          {mode === 'login' 
+            ? 'Sign In' 
+            : mode === 'register'
+            ? 'Create Account'
+            : 'Send Reset Instructions'}
         </Button>
       </form>
       
-      <div className="mt-6 text-center">
+      <div className="mt-6 text-center space-y-2">
         <p className="text-sm text-muted-foreground">
-          {mode === 'login' ? "Don't have an account?" : "Already have an account?"}
-          {' '}
-          <button
-            type="button"
-            onClick={toggleMode}
-            className="text-primary hover:underline font-medium"
-            disabled={isLoading}
-          >
-            {mode === 'login' ? 'Sign up' : 'Sign in'}
-          </button>
+          {mode === 'login' && (
+            <>
+              Don't have an account?{' '}
+              <button
+                type="button"
+                onClick={() => toggleMode('register')}
+                className="text-primary hover:underline font-medium"
+                disabled={isLoading}
+              >
+                Sign up
+              </button>
+            </>
+          )}
+          {mode === 'register' && (
+            <>
+              Already have an account?{' '}
+              <button
+                type="button"
+                onClick={() => toggleMode('login')}
+                className="text-primary hover:underline font-medium"
+                disabled={isLoading}
+              >
+                Sign in
+              </button>
+            </>
+          )}
+          {mode === 'forgotPassword' && (
+            <>
+              Remember your password?{' '}
+              <button
+                type="button"
+                onClick={() => toggleMode('login')}
+                className="text-primary hover:underline font-medium"
+                disabled={isLoading}
+              >
+                Sign in
+              </button>
+            </>
+          )}
         </p>
+        {mode === 'login' && (
+          <p className="text-sm">
+            <button
+              type="button"
+              onClick={() => toggleMode('forgotPassword')}
+              className="text-primary hover:underline font-medium"
+              disabled={isLoading}
+            >
+              Forgot your password?
+            </button>
+          </p>
+        )}
       </div>
     </div>
   );

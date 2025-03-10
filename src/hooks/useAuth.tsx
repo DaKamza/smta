@@ -1,4 +1,3 @@
-
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -15,6 +14,7 @@ interface AuthContextType {
   register: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
+  resetPassword: (email: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -213,8 +213,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const resetPassword = async (email: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth`,
+      });
+      
+      if (error) {
+        console.error('Password reset error:', error);
+        toast.error(error.message);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Password reset error:', error);
+      toast.error('Failed to send password reset email');
+      return false;
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, register, login, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, register, login, logout, resetPassword }}>
       {children}
     </AuthContext.Provider>
   );
