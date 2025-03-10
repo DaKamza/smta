@@ -87,24 +87,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const register = async (email: string, password: string, name: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      // First, check if the user already exists to provide a better error message
+      // First, thoroughly check if user exists through multiple methods
+      
+      // Method 1: Check auth API directly first
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password: 'dummy-check-password-12345', // Use a dummy password to avoid login but check if email exists
+      });
+      
+      // If we get a specific error message about invalid credentials but not about user not existing,
+      // it likely means the user exists (wrong password but email exists)
+      if (authError && 
+          (authError.message.includes('Invalid login credentials') || 
+           authError.message.includes('Invalid email or password'))) {
+        console.log('User already exists based on auth check:', email);
+        return { 
+          success: false, 
+          error: 'already_registered'
+        };
+      }
+
+      // Method 2: Check profiles table as fallback
       const { data: existingUsers, error: lookupError } = await supabase
         .from('profiles')
         .select('email')
         .eq('email', email)
         .limit(1);
         
-      if (lookupError) {
-        console.error('Error checking existing user:', lookupError);
-      } else if (existingUsers && existingUsers.length > 0) {
-        // User already exists, return specific error
-        console.log('User already exists with email:', email);
+      if (!lookupError && existingUsers && existingUsers.length > 0) {
+        console.log('User already exists based on profiles check:', email);
         return { 
           success: false, 
           error: 'already_registered'
         };
       }
       
+      // If we reach here, attempt to register the user
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -118,9 +136,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) {
         console.error('Error during registration:', error);
         
+        // Comprehensive check for all variations of "already exists" errors
         if (error.message.includes('already registered') || 
             error.message.includes('already exists') || 
-            error.message.includes('already taken')) {
+            error.message.includes('already taken') ||
+            error.message.includes('already in use') ||
+            error.message.includes('email address is taken') ||
+            error.message.toLowerCase().includes('duplicate') ||
+            error.message.toLowerCase().includes('unique violation')) {
+          
+          console.log('User already exists based on signup error:', error.message);
           return { 
             success: false, 
             error: 'already_registered'

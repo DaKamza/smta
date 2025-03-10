@@ -65,9 +65,20 @@ const AuthForm = () => {
           setShowConfirmEmailMessage(true);
           toast.info('Please check your email to confirm your account before logging in.');
         } else if (result.error === 'already_registered') {
-          toast.warning('This email is already registered. Please sign in instead.');
+          toast.warning('This email is already registered. Please sign in instead.', {
+            duration: 5000,
+            id: 'duplicate-email',
+          });
+          
           setMode('login');
           setPassword('');
+          
+          setTimeout(() => {
+            const passwordInput = document.getElementById('password');
+            if (passwordInput) {
+              passwordInput.focus();
+            }
+          }, 100);
         }
       }
     } finally {
