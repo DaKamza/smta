@@ -1,3 +1,4 @@
+
 import { useEffect } from 'react';
 import { notificationService } from './services/notifications';
 import { Toaster } from "@/components/ui/toaster";
@@ -15,7 +16,24 @@ const queryClient = new QueryClient();
 
 function App() {
   useEffect(() => {
+    // Initialize push notifications
     notificationService.initialize().catch(console.error);
+    
+    // Set up an interval to check for due tasks every hour
+    const checkTasksInterval = setInterval(() => {
+      if (localStorage.getItem('supabase.auth.token')) {
+        notificationService.checkForDueTasks().catch(console.error);
+      }
+    }, 60 * 60 * 1000); // Check every hour
+    
+    // Check once at startup if user is logged in
+    if (localStorage.getItem('supabase.auth.token')) {
+      notificationService.checkForDueTasks().catch(console.error);
+    }
+    
+    return () => {
+      clearInterval(checkTasksInterval);
+    };
   }, []);
 
   return (

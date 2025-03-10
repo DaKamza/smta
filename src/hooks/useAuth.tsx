@@ -1,3 +1,4 @@
+
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -207,6 +208,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const resetPassword = async (email: string): Promise<boolean> => {
     try {
+      // Validate email format
+      if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+        toast.error('Please enter a valid email address');
+        return false;
+      }
+      
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: window.location.origin + '/auth?mode=updatePassword',
       });
