@@ -1,3 +1,4 @@
+
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -86,6 +87,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const register = async (email: string, password: string, name: string): Promise<{ success: boolean; error?: string }> => {
     try {
+      // First, check if the user already exists to provide a better error message
+      const { data: existingUsers, error: lookupError } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('email', email)
+        .limit(1);
+        
+      if (lookupError) {
+        console.error('Error checking existing user:', lookupError);
+      } else if (existingUsers && existingUsers.length > 0) {
+        // User already exists, return specific error
+        console.log('User already exists with email:', email);
+        return { 
+          success: false, 
+          error: 'already_registered'
+        };
+      }
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -99,7 +118,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) {
         console.error('Error during registration:', error);
         
-        if (error.message.includes('already registered')) {
+        if (error.message.includes('already registered') || 
+            error.message.includes('already exists') || 
+            error.message.includes('already taken')) {
           return { 
             success: false, 
             error: 'already_registered'

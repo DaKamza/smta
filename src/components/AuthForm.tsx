@@ -65,8 +65,9 @@ const AuthForm = () => {
           setShowConfirmEmailMessage(true);
           toast.info('Please check your email to confirm your account before logging in.');
         } else if (result.error === 'already_registered') {
-          toast.info('This email is already registered. Please sign in instead.');
+          toast.warning('This email is already registered. Please sign in instead.');
           setMode('login');
+          setPassword('');
         }
       }
     } finally {
