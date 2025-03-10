@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -84,10 +83,14 @@ const AuthForm = () => {
       } else if (mode === 'forgotPassword') {
         const success = await resetPassword(email);
         if (success) {
-          toast.success('Password reset email sent. Please check your inbox.');
-          setMode('login');
+          toast.success('Password reset email sent. Please check your inbox.', {
+            duration: 6000,
+          });
         }
       }
+    } catch (error) {
+      console.error('Auth error:', error);
+      toast.error('An error occurred during authentication');
     } finally {
       setIsLoading(false);
     }
@@ -200,7 +203,19 @@ const AuthForm = () => {
       
       <div className="mt-6 text-center space-y-2">
         <p className="text-sm text-muted-foreground">
-          {mode === 'login' && (
+          {mode === 'forgotPassword' ? (
+            <>
+              Remember your password?{' '}
+              <button
+                type="button"
+                onClick={() => toggleMode('login')}
+                className="text-primary hover:underline font-medium"
+                disabled={isLoading}
+              >
+                Sign in
+              </button>
+            </>
+          ) : mode === 'login' ? (
             <>
               Don't have an account?{' '}
               <button
@@ -212,23 +227,9 @@ const AuthForm = () => {
                 Sign up
               </button>
             </>
-          )}
-          {mode === 'register' && (
+          ) : (
             <>
               Already have an account?{' '}
-              <button
-                type="button"
-                onClick={() => toggleMode('login')}
-                className="text-primary hover:underline font-medium"
-                disabled={isLoading}
-              >
-                Sign in
-              </button>
-            </>
-          )}
-          {mode === 'forgotPassword' && (
-            <>
-              Remember your password?{' '}
               <button
                 type="button"
                 onClick={() => toggleMode('login')}

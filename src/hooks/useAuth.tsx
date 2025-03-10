@@ -87,16 +87,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const register = async (email: string, password: string, name: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      // First, thoroughly check if user exists through multiple methods
-      
-      // Method 1: Check auth API directly first
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
-        password: 'dummy-check-password-12345', // Use a dummy password to avoid login but check if email exists
+        password: 'dummy-check-password-12345',
       });
       
-      // If we get a specific error message about invalid credentials but not about user not existing,
-      // it likely means the user exists (wrong password but email exists)
       if (authError && 
           (authError.message.includes('Invalid login credentials') || 
            authError.message.includes('Invalid email or password'))) {
@@ -107,7 +102,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         };
       }
 
-      // Method 2: Check profiles table as fallback
       const { data: existingUsers, error: lookupError } = await supabase
         .from('profiles')
         .select('email')
@@ -122,7 +116,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         };
       }
       
-      // If we reach here, attempt to register the user
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -136,7 +129,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) {
         console.error('Error during registration:', error);
         
-        // Comprehensive check for all variations of "already exists" errors
         if (error.message.includes('already registered') || 
             error.message.includes('already exists') || 
             error.message.includes('already taken') ||
@@ -216,7 +208,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const resetPassword = async (email: string): Promise<boolean> => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth`,
+        redirectTo: window.location.origin + '/auth?mode=updatePassword',
       });
       
       if (error) {
@@ -225,6 +217,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return false;
       }
 
+      toast.success('Password reset instructions have been sent to your email');
       return true;
     } catch (error) {
       console.error('Password reset error:', error);
